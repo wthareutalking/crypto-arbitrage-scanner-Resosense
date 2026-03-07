@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: resosense-bot
+    ports:
+      - "2112:2112"
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    env_file:
+      - .env
+    environment:
+      REDIS_ADDRESS: "redis:6379"
+      TELEGRAM_TOKEN: "${TELEGRAM_TOKEN}"
+      DATABASE_HOST: "postgres"
+      DATABASE_PORT: "5432"
+      DATABASE_USER: "postgres"
+      DATABASE_PASSWORD: "${DB_PASSWORD}"
+      DATABASE_NAME: "resosense"
+    volumes:
+      - ./config:/root/config 
+    
+  redis:
+    image: redis:alpine
+    container_name: resosense-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: resosense-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: resosense
+    ports:
+      -  "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: resosense-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "admin@admin.com"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_PASSWORD}"
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+
+  prometheus:
+    image: prom/prometheus
+    container_name: resosense-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml #прокидываем конфиг
+    ports:
+      - "9090:9090"
+  
+  grafana:
+    image: grafana/grafana
+    container_name: resosense-grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    container_name: resosense-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    container_name: resosense-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092, PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+
+volumes:
+  redis_data:
+  pg_data: 

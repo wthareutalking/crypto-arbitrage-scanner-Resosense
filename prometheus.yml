@@ -1,0 +1,7 @@
+global:
+  scrape_interval: 5s #скачивай данные каждые 5 сек
+
+scrape_configs:
+  - job_name: 'resosense_bot'
+    static_configs:
+      - targets: ['app:2112'] #имя сервиса бота в докере + порт

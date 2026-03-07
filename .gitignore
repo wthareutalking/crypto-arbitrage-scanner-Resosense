@@ -1,0 +1,21 @@
+# скомпилированные бинарники
+/bot
+*.exe
+*.out
+
+# ide
+.idea/
+.vscode/
+*.swp
+
+# зависимости
+/vendor/
+
+# конфиг
+config/config.yaml
+
+# данные бд
+pg_data/
+redis_data/
+
+.env

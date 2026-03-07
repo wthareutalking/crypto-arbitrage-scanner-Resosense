@@ -1,0 +1,31 @@
+port: ":8080"
+env: "local"
+
+exchanges:
+  binance_url: "wss://stream.binance.com:9443"
+  bybit_url: "wss://stream.bybit.com/v5/public/spot"
+  okx_url: "wss://ws.okx.com:8443/ws/v5/public"
+
+
+pairs:
+  - "BTCUSDT"
+  - "ETHUSDT"
+  - "SOLUSDT"
+  - "DOGEUSDT"
+  - "XRPUSDT"
+
+redis:
+  address: "localhost:6379"
+  password: "your_pass"
+  db: 0
+
+telegram:
+  token: "your_token"
+  admin_id: "yourId"
+
+database:
+  host: "localhost"
+  port: "5432"
+  user: "postgres"
+  password: "your_password"
+  name: "resosense"
