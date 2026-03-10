@@ -244,7 +244,15 @@ func (n *Notifier) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 			n.sendText(msg.Chat.ID, "❌ Registration error")
 			return
 		}
-		n.sendText(msg.Chat.ID, "👋 Тестовое приветствие *потом отредактировать* ")
+		text := "👋 *Welcome to ResoSense Arbitrage!*\n\n" +
+			"I am a high-speed cross-exchange crypto arbitrage scanner. My mission is to continuously analyze order books from Binance, Bybit, and OKX to find profitable spreads for you.\n\n" +
+			"⚡️ *Core Features:*\n" +
+			"• Market monitoring with <100ms latency\n" +
+			"• Custom filters for spreads and trading pairs\n" +
+			"• Smart protection against duplicate signals\n\n" +
+			"⚙️ *Getting Started:*\n" +
+			"Use the /settings command to set your minimum profit percentage and build your coin portfolio. As soon as an arbitrage opportunity appears on the market, I will send you a signal instantly!"
+		n.sendText(msg.Chat.ID, text)
 
 	case "status":
 		user, err := n.pgStorage.GetUser(ctx, msg.From.ID)
@@ -269,6 +277,7 @@ func (n *Notifier) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 
 func (n *Notifier) sendText(chatID int64, text string) {
 	msg := tgbotapi.NewMessage(chatID, text)
+	msg.ParseMode = "Markdown"
 	n.bot.Send(msg)
 }
 
