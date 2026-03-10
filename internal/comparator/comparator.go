@@ -72,7 +72,7 @@ func (c *Compatator) checkArbitrage(ctx context.Context) {
 				}
 
 				//высчитывание профита
-				spread := (sellPriceData.Bid - buyPriceData.Ask) / buyPriceData.Ask * 100
+				spread := CalculateSpread(buyPriceData.Ask, sellPriceData.Bid)
 
 				if spread > 0 {
 					metrics.ArbitrageFound.Inc()
@@ -92,4 +92,12 @@ func (c *Compatator) checkArbitrage(ctx context.Context) {
 			}
 		}
 	}
+}
+
+// calculateSpread высчитывает процент выгоды, вынесена отдельно для unit-тестирования
+func CalculateSpread(buyPrice, sellPrice float64) float64 {
+	if buyPrice <= 0 || sellPrice <= 0 {
+		return 0
+	}
+	return (sellPrice - buyPrice) / buyPrice * 100
 }

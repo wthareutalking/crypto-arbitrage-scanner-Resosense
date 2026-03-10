@@ -70,6 +70,8 @@ services:
       - "3000:3000"
     depends_on:
       - prometheus
+    volumes:
+      - grafana_data:/var/lib/grafana
   
   zookeeper:
     image: confluentinc/cp-zookeeper:7.4.0
@@ -99,3 +101,4 @@ services:
 volumes:
   redis_data:
   pg_data: 
+  grafana_data:
