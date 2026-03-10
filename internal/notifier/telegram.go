@@ -199,6 +199,33 @@ func (n *Notifier) handleCallback(ctx context.Context, callback *tgbotapi.Callba
 	defer n.bot.Request(tgbotapi.NewCallback(callback.ID, ""))
 
 	switch callback.Data {
+
+	case "cmd_switch_lang_en", "cmd_switch_lang_ru":
+		newLang := "en"
+		if callback.Data == "cmd_switch_lang_ru" {
+			newLang = "ru"
+		}
+
+		//сохранение языка в бд
+		user, err := n.pgStorage.GetUser(ctx, callback.From.ID)
+		if err == nil {
+			user.Settings.Language = newLang
+			n.pgStorage.UpdateSettings(ctx, user.ID, user.Settings)
+		}
+
+		//новый текст и кнопка
+		text, keyboard := getWelcomeData(newLang)
+
+		// 4. РЕДАКТИРУЕМ текущее сообщение
+		editMsg := tgbotapi.NewEditMessageTextAndMarkup(
+			callback.Message.Chat.ID,
+			callback.Message.MessageID,
+			text,
+			keyboard,
+		)
+		editMsg.ParseMode = "Markdown"
+		n.bot.Send(editMsg)
+
 	case "cmd_set_spread":
 		n.sendText(callback.Message.Chat.ID, "✍️ Enter the spread (for example: 1.5):")
 		n.redisStorage.SetStage(ctx, callback.From.ID, "waiting_for_spread")
@@ -244,15 +271,18 @@ func (n *Notifier) handleCommand(ctx context.Context, msg *tgbotapi.Message) {
 			n.sendText(msg.Chat.ID, "❌ Registration error")
 			return
 		}
-		text := "👋 *Welcome to ResoSense Arbitrage!*\n\n" +
-			"I am a high-speed cross-exchange crypto arbitrage scanner. My mission is to continuously analyze order books from Binance, Bybit, and OKX to find profitable spreads for you.\n\n" +
-			"⚡️ *Core Features:*\n" +
-			"• Market monitoring with <100ms latency\n" +
-			"• Custom filters for spreads and trading pairs\n" +
-			"• Smart protection against duplicate signals\n\n" +
-			"⚙️ *Getting Started:*\n" +
-			"Use the /settings command to set your minimum profit percentage and build your coin portfolio. As soon as an arbitrage opportunity appears on the market, I will send you a signal instantly!"
-		n.sendText(msg.Chat.ID, text)
+		//достаем юзера чтобы узнать язык
+		user, _ := n.pgStorage.GetUser(ctx, msg.From.ID)
+		lang := user.Settings.Language
+		if lang == "" {
+			lang = "en" //по умолчанию
+		}
+
+		text, keyboard := getWelcomeData(lang)
+		reply := tgbotapi.NewMessage(msg.Chat.ID, text)
+		reply.ParseMode = "Markdown"
+		reply.ReplyMarkup = keyboard // прикрепляем кнопку
+		n.bot.Send(reply)
 
 	case "status":
 		user, err := n.pgStorage.GetUser(ctx, msg.From.ID)
@@ -496,4 +526,43 @@ func (n *Notifier) handleSpreadInput(ctx context.Context, msg *tgbotapi.Message)
 	n.redisStorage.DelState(ctx, msg.From.ID)
 
 	n.sendText(msg.Chat.ID, fmt.Sprintf("✅ Done! The minimum spread has been changed to: %.2f%%", val))
+}
+
+func getWelcomeData(lang string) (string, tgbotapi.InlineKeyboardMarkup) {
+	var text string
+	var keyboard tgbotapi.InlineKeyboardMarkup
+
+	if lang == "ru" {
+		text = "👋 *Добро пожаловать в ResoSense!*\n\n" +
+			"Я — высокоскоростной сканер межбиржевого арбитража. Моя задача: непрерывно анализировать стаканы Binance, Bybit и OKX и находить для вас профитные связки.\n\n" +
+			"⚡️ *Что я умею:*\n" +
+			"• Мониторинг рынка с задержкой <100мс\n" +
+			"• Кастомные фильтры по спреду и монетам\n" +
+			"• Умная защита от дублирующихся сигналов\n\n" +
+			"⚙️ *С чего начать?*\n" +
+			"Перейдите в настройки (/settings), задайте минимальный % профита и соберите свой портфель. Ждите сигналов!"
+		// кнопка для переключения на английский
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Switch to English", "cmd_switch_lang_en"),
+			),
+		)
+	} else {
+		//по умолчанию en
+		text = "👋 *Welcome to ResoSense!*\n\n" +
+			"I am a high-speed cross-exchange crypto arbitrage scanner. My mission is to continuously analyze order books from Binance, Bybit, and OKX to find profitable spreads for you.\n\n" +
+			"⚡️ *Core Features:*\n" +
+			"• Market monitoring with <100ms latency\n" +
+			"• Custom filters for spreads and trading pairs\n" +
+			"• Smart protection against duplicate signals\n\n" +
+			"⚙️ *Getting Started:*\n" +
+			"Use the /settings command to set your minimum profit percentage and build your coin portfolio. Wait for signals!"
+		//кнопка для переключения на русский
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Переключить на Русский", "cmd_switch_lang_ru"),
+			),
+		)
+	}
+	return text, keyboard
 }

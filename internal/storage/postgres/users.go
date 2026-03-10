@@ -19,6 +19,7 @@ type User struct {
 type UserSettings struct {
 	MinSpread float64  `json:"min_spread"`
 	Pairs     []string `json:"pairs"`
+	Language  string   `json:"language"`
 }
 
 func (s *Storage) SaveUser(ctx context.Context, id int64, username string) error {
