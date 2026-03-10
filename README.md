@@ -58,7 +58,7 @@ resosense_price_updates_total — интенсивность WSS-потоков.
 
 resosense_arbitrage_found_total — счетчик найденных вилок.
 
-resosense_active_users — Gauge активных подписок.
+resosense_active_users — счетчик активных пользователей.
 
 go_goroutines - сколько горутин работает прямо сейчас.
 
